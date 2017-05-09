@@ -90,7 +90,8 @@ def scrape(query, page=1):
 
 def on_job(job):
     """called on a new job listing, e.g. post to twitter or sth"""
-    print('{} ({})'.format(job['Title'], job['Location']))
+    with open('/tmp/ice_jobs.txt', 'a') as f:
+        f.write('{} ({})'.format(job['Title'], job['Location']))
 
 
 if __name__ == '__main__':
