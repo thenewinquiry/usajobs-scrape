@@ -76,6 +76,11 @@ def scrape(query, page=1):
                          headers=headers, cookies=cookies, data=json.dumps(data))
     payload = json.loads(resp.text)
     results = payload['Jobs']
+
+    for r in results:
+        if r['Location'] == 'Multiple Locations':
+            r['Locations'] = scrape_locations(r)
+
     if (payload['Pager']['CurrentPageIndex'] <= payload['Pager']['LastPageIndex']):
         next = payload['Pager']['NextPageIndex']
         fetched = False
@@ -86,6 +91,24 @@ def scrape(query, page=1):
             except requests.exceptions.ConnectionError:
                 sleep(5)
     return results
+
+
+def scrape_locations(job):
+    id = job['DocumentID']
+    url = '{}/GetJob/ViewDetails/{}'.format(BASE_URL, id)
+    resp = requests.get(url)
+    soup = BeautifulSoup(resp.text, 'html.parser')
+    els = soup.select('#additional-locations li a')
+    if not els:
+        els = soup.select('.usajobs-joa-intro__summary li a')
+    locs = []
+    for el in els:
+        locs.append({
+            'name': el.attrs['data-name'],
+            'lat': el.attrs['data-coord-lat'],
+            'lng': el.attrs['data-coord-long']
+        })
+    return locs
 
 
 def on_job(job):
