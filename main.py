@@ -78,8 +78,9 @@ def scrape(query, page=1):
     results = payload['Jobs']
 
     for r in results:
+        r['html'] = fetch_html(r)
         if r['Location'] == 'Multiple Locations':
-            r['Locations'] = scrape_locations(r)
+            r['Locations'] = scrape_locations(r['html'])
 
     if (payload['Pager']['CurrentPageIndex'] <= payload['Pager']['LastPageIndex']):
         next = payload['Pager']['NextPageIndex']
@@ -93,11 +94,15 @@ def scrape(query, page=1):
     return results
 
 
-def scrape_locations(job):
+def fetch_html(job):
     id = job['DocumentID']
     url = '{}/GetJob/ViewDetails/{}'.format(BASE_URL, id)
     resp = requests.get(url)
-    soup = BeautifulSoup(resp.text, 'html.parser')
+    return resp.text
+
+
+def scrape_locations(html):
+    soup = BeautifulSoup(html, 'html.parser')
     els = soup.select('#additional-locations li a')
     if not els:
         els = soup.select('.usajobs-joa-intro__summary li a')
