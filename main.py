@@ -28,6 +28,7 @@ import json
 import requests
 from time import sleep
 from bs4 import BeautifulSoup
+from datetime import datetime
 
 BASE_URL = 'https://www.usajobs.gov'
 INTERVAL = 60 * 60 * 12
@@ -124,20 +125,26 @@ def on_job(job):
 
 if __name__ == '__main__':
     try:
-        jobs = json.load(open('jobs.json', 'r'))
+        seen = json.load(open('data/.seen.json', 'r'))
     except FileNotFoundError:
-        jobs = {}
+        seen = []
 
     while True:
         results = scrape('immigration')
+        jobs = {}
         for job in results:
             id = job['PositionID'] # alternatively, 'DocumentID'
-            if id not in jobs:
+            if id not in seen:
                 jobs[id] = job
                 on_job(job)
+                seen.append(id)
 
-        with open('jobs.json', 'w') as f:
-            json.dump(jobs, f)
+        if jobs:
+            with open('data/{}.json'.format(datetime.now().isoformat()), 'w') as f:
+                json.dump(jobs, f)
+
+        with open('data/.seen.json', 'w') as f:
+            json.dump(seen, f)
         print('done')
 
         sleep(INTERVAL)
